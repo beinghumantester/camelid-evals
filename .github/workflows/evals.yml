@@ -1,0 +1,141 @@
+name: camelid-evals
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+jobs:
+  unit-tests:
+    name: evaluator unit tests (scripts/lib/*.ts — no live/mock Camelid or API key needed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      # A broken grader should fail fast and separately from a broken Camelid behavior — the
+      # same "don't let a broken evaluator masquerade as a Camelid failure" principle behind
+      # the ERROR status, applied to CI structure instead of a single run's report.
+      - name: Run evaluator unit tests
+        run: npm test
+
+  automated:
+    name: environment-integrity + self-conformance + regression-museum (mock server, no API key needed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Start mock Camelid server (default BUG_MODE=stop_straddle — matches the pinned, unfixed v0.6.1/v0.7.0 laptop, see docs/V0.6.1_DRIFT_AUDIT.md)
+        run: |
+          nohup npx tsx mock-server/server.ts > mock-server.log 2>&1 &
+          echo $! > mock-server.pid
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8181/api/capabilities > /dev/null && exit 0
+            sleep 0.5
+          done
+          echo "mock server never became healthy"; cat mock-server.log; exit 1
+        env:
+          CAMELID_BASE_URL: http://127.0.0.1:8181
+
+      - name: Run environment-integrity + self-conformance + regression-museum evals (expect KB-1=KNOWN_DEFECT, KB-2=NOT_APPLICABLE, run succeeds)
+        run: npx tsx scripts/run-harness.ts --domain environment-integrity,self-conformance,regression-museum
+        env:
+          CAMELID_BASE_URL: http://127.0.0.1:8181
+
+      - name: Prove tier isolation (KB-1 must FAIL if the mock stops reproducing the bug while the harness still believes it's on an unfixed version)
+        run: |
+          kill "$(cat mock-server.pid)" || true
+          BUG_MODE=fixed nohup npx tsx mock-server/server.ts > mock-server-bug.log 2>&1 &
+          echo $! > mock-server-bug.pid
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8181/api/capabilities > /dev/null && break
+            sleep 0.5
+          done
+          if npm run evals:automated; then
+            echo "expected regression-museum#1 (KB-1, characterization) to FAIL when BUG_MODE=fixed but the running version still predates the real fix, but the run passed"
+            exit 1
+          else
+            echo "confirmed: KB-1 correctly failed — the historically-known defect stopped reproducing on a version that should still have it"
+          fi
+        env:
+          CAMELID_BASE_URL: http://127.0.0.1:8181
+
+      - name: Stop mock server
+        if: always()
+        run: kill "$(cat mock-server-bug.pid)" 2>/dev/null || kill "$(cat mock-server.pid)" 2>/dev/null || true
+
+      - name: Upload run reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-reports
+          path: runs/*.json
+          if-no-files-found: ignore
+
+  semantic:
+    name: evidence-audit + model-compatibility (needs ANTHROPIC_API_KEY)
+    runs-on: ubuntu-latest
+    # Semantic (LLM-judged) domains only run when the secret is configured.
+    # Forked PRs never have access to repo secrets, so this job skips
+    # gracefully there rather than failing — this mirrors run-harness.ts's
+    # own graceful-SKIPPED behavior when ANTHROPIC_API_KEY is unset locally.
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start mock Camelid server
+        run: |
+          nohup npx tsx mock-server/server.ts > mock-server.log 2>&1 &
+          echo $! > mock-server.pid
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8181/api/capabilities > /dev/null && exit 0
+            sleep 0.5
+          done
+          echo "mock server never became healthy"; cat mock-server.log; exit 1
+        env:
+          CAMELID_BASE_URL: http://127.0.0.1:8181
+
+      - name: Run evidence-audit + model-compatibility evals
+        run: npm run evals:semantic
+        env:
+          CAMELID_BASE_URL: http://127.0.0.1:8181
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Stop mock server
+        if: always()
+        run: kill "$(cat mock-server.pid)" 2>/dev/null || true
+
+      - name: Upload run reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-reports-semantic
+          path: runs/*.json
+          if-no-files-found: ignore

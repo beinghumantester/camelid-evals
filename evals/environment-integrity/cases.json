@@ -1,0 +1,55 @@
+{
+  "_provenance": "EI-1..EI-5 per BASELINE_EVAL_PLAN.md section 'Environment integrity (preflight)'. Every oracle cites a real HealthResponse field from src/api/mod.rs, confirmed present at the v0.6.1 tag this project is pinned to. This domain runs FIRST in run-harness.ts: if any case here fails, every other result in the same run is a result about an environment that isn't the one you think it is, and must be downgraded to UNVERIFIED rather than trusted at face value (BASELINE_EVAL_PLAN.md principle #12).",
+  "cases": [
+    {
+      "id": "EI-1",
+      "description": "GET /v1/health reports version == the pinned laptop's Camelid version (0.6.1). Wrong version means every other case below is being run against a Camelid you didn't mean to test.",
+      "check": "version_matches",
+      "evidence": {
+        "confirmedAtVersion": "v0.6.1",
+        "evidenceReference": "HealthResponse.version field, src/api/mod.rs:560-565 — \"Release version of the running engine (the crate version, e.g. 0.4.7)\"",
+        "registryEntryPresentAtVersion": true
+      }
+    },
+    {
+      "id": "EI-2",
+      "description": "GET /v1/health reports a release build, not a dev/git-describe drift string — confirms this is the official released binary, not an ad hoc local build that happens to report a matching version number.",
+      "check": "version_matches",
+      "evidence": {
+        "confirmedAtVersion": "v0.6.1",
+        "evidenceReference": "HealthResponse.build doc comment, src/api/mod.rs:566-570 — \"On a released binary these two agree; on a developer build this is the field that says how far the process has drifted from a tag.\"",
+        "registryEntryPresentAtVersion": true
+      }
+    },
+    {
+      "id": "EI-3",
+      "description": "active_model_id matches the active model profile's ledger row id, and backend == 'llama' (the literal string Camelid reports for llama-family GGUF models).",
+      "check": "active_model_matches_profile",
+      "evidence": {
+        "confirmedAtVersion": "v0.6.1",
+        "evidenceReference": "HealthResponse.active_model_id/backend, src/api/mod.rs:574, 580-581; backend string \"llama\" confirmed literal at src/api/mod.rs:3437",
+        "registryEntryPresentAtVersion": true
+      }
+    },
+    {
+      "id": "EI-4",
+      "description": "vision_ready == false — the active profile (TinyLlama 1.1B Chat Q8_0, or any of the other 4 real profiles on this laptop) has no resident Prism/Qwen3-VL projector, so a true vision_ready would itself be a sign something is misconfigured.",
+      "check": "vision_ready_false",
+      "evidence": {
+        "confirmedAtVersion": "v0.6.1",
+        "evidenceReference": "HealthResponse.vision_ready — \"True when the active runnable model has a resident Prism/Qwen3-VL projector\" — src/api/mod.rs:573-575",
+        "registryEntryPresentAtVersion": true
+      }
+    },
+    {
+      "id": "EI-5",
+      "description": "No Metal/CUDA backend reports active in q8_runtime — this laptop is Intel i7-8665U, integrated graphics only, no NVIDIA/CUDA. A true metal/cuda flag here would mean the harness is accidentally pointed at a different machine.",
+      "check": "no_gpu_backend_active",
+      "evidence": {
+        "confirmedAtVersion": "v0.6.1",
+        "evidenceReference": "Q8RuntimeFlags.metal/.cuda booleans, src/inference/q8_runtime.rs:96-99, surfaced through HealthResponse.q8_runtime (src/api/mod.rs:576). Exact end-to-end JSON key path was not captured against a live instance during source review — the field's existence and type are confirmed from source, its live wire shape is not independently re-confirmed beyond that.",
+        "registryEntryPresentAtVersion": true
+      }
+    }
+  ]
+}

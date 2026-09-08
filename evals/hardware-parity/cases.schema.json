@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Camelid hardware-parity eval case (SCAFFOLD — not executed by any script)",
+  "type": "object",
+  "required": ["id", "domain", "description", "rowId", "existingClaim", "expect"],
+  "properties": {
+    "id": { "type": "integer" },
+    "domain": { "const": "hardware-parity" },
+    "description": { "type": "string" },
+    "rowId": {
+      "type": "string",
+      "description": "Must resolve to a real row id already in fixtures/ledger-excerpt.json."
+    },
+    "existingClaim": {
+      "type": "object",
+      "description": "The row's real, current parity_audited and performance_measured strings, quoted verbatim — the baseline this case extends or re-verifies.",
+      "required": ["parityAudited", "performanceMeasured"],
+      "properties": {
+        "parityAudited": { "type": "string" },
+        "performanceMeasured": { "type": "string" }
+      }
+    },
+    "backendsToCompare": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["cpu", "metal", "cuda"] },
+      "minItems": 2
+    },
+    "expect": {
+      "type": "object",
+      "properties": {
+        "tokenLevelDiffRequired": { "type": "boolean", "default": true },
+        "mustNotGeneralizeSingleMachineMeasurement": { "type": "boolean", "default": true }
+      }
+    }
+  }
+}

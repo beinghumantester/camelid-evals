@@ -1,0 +1,42 @@
+{
+  "_provenance": "Backend/capability fields are read from the real v0.6.1 ledger rows already in fixtures/ledger-excerpt.json; expectedVersion and this exact laptop's active profile are from the user's own reported hardware (HP EliteBook 840 G6, i7-8665U, no GPU, 14GB RAM). See docs/MODEL_PROFILES.md.",
+  "activeProfileId": "tinyllama-1.1b-q8",
+  "profiles": [
+    {
+      "id": "tinyllama-1.1b-q8",
+      "ledgerRowId": "tinyllama_1_1b_chat_q8_0",
+      "backend": "cpu",
+      "expectedVersion": "0.6.1",
+      "capabilities": { "chat": true, "tools": false, "embeddings": false, "vision": false }
+    },
+    {
+      "id": "llama32-3b-instruct-q8",
+      "ledgerRowId": "llama32_3b_instruct_q8_0",
+      "backend": "cpu",
+      "expectedVersion": "0.6.1",
+      "capabilities": { "chat": true, "tools": true, "embeddings": false, "vision": false }
+    },
+    {
+      "id": "nomic-embed-v1.5-q8",
+      "ledgerRowId": "nomic_embed_text_v1_5_q8_0",
+      "backend": "cpu",
+      "expectedVersion": "0.6.1",
+      "capabilities": { "chat": false, "tools": false, "embeddings": true, "vision": false }
+    },
+    {
+      "id": "qwen3-0.6b-instruct-q8",
+      "ledgerRowId": "qwen3_0_6b_instruct_q8_0",
+      "backend": "cpu",
+      "expectedVersion": "0.6.1",
+      "capabilities": { "chat": true, "tools": false, "embeddings": false, "vision": false }
+    },
+    {
+      "id": "gemma3-1b-it-q8",
+      "ledgerRowId": "gemma_3_1b_it_q8_0",
+      "backend": "cpu",
+      "expectedVersion": "0.6.1",
+      "capabilities": { "chat": true, "tools": false, "embeddings": false, "vision": false }
+    }
+  ],
+  "notes": "All five profiles are files the user actually has on disk in models/ on the HP EliteBook. None declare vision:true because none pair with a resident Prism/Qwen3-VL projector, and this laptop has no Metal/CUDA backend to run one on regardless (see CAP-VIS-1 in BASELINE_EVAL_PLAN.md)."
+}

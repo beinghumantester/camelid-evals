@@ -1,0 +1,22 @@
+{
+  "name": "camelid-evals",
+  "version": "1.0.0",
+  "description": "A multi-layer evaluation framework for the Camelid local inference engine: self-conformance auditing against its own declared API contract, evidence-vs-claim auditing against its real compatibility ledger, and a historical bug-regression museum — plus scaffolded (not-yet-executable) skills for agent/security/RAG/multimodal/hardware-parity evaluation, pending a live, tool-executing Camelid instance.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "mock-server": "tsx mock-server/server.ts",
+    "evals": "tsx scripts/run-harness.ts --domain all",
+    "evals:automated": "tsx scripts/run-harness.ts --domain self-conformance,regression-museum",
+    "evals:semantic": "tsx scripts/run-harness.ts --domain evidence-audit,model-compatibility",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "_NOT_EXECUTABLE": "Worked examples of the schema in cases.schema.json only. Not loaded by scripts/run-harness.ts and has no grader. Every rowId below is real and already present in fixtures/ledger-excerpt.json. See SCAFFOLD.md.",
+  "cases": [
+    {
+      "id": 1,
+      "domain": "hardware-parity",
+      "description": "qwen3_14b_q4_k_m's own row admits Metal-vs-CPU parity was checked (8/8 greedy tokens) but an external oracle was never run. A future case should either run that external comparison or explicitly continue reporting the gap — never round it up to 'fully validated.'",
+      "rowId": "qwen3_14b_q4_k_m",
+      "existingClaim": {
+        "parityAudited": "metal_equals_deterministic_cpu_for_8_of_8_raw_greedy_tokens_external_oracle_not_run",
+        "performanceMeasured": "bounded_measurement_only_not_promoted"
+      },
+      "backendsToCompare": ["cpu", "metal"],
+      "expect": {
+        "tokenLevelDiffRequired": true,
+        "mustNotGeneralizeSingleMachineMeasurement": true
+      }
+    },
+    {
+      "id": 2,
+      "domain": "hardware-parity",
+      "description": "gemma4_12b_it_qat_q4_0's real performance_measured string explicitly warns the single-Apple-M4 measurement is not a portable throughput claim. A future case must preserve that caveat rather than reporting a bare tokens/sec number.",
+      "rowId": "gemma4_12b_it_qat_q4_0",
+      "existingClaim": {
+        "parityAudited": "validated_component_parity_and_whole_output_k1_identity_with_speculative_promotion_pending",
+        "performanceMeasured": "single_apple_m4_measurement_exists_not_a_portable_throughput_claim"
+      },
+      "backendsToCompare": ["metal", "cpu"],
+      "expect": {
+        "tokenLevelDiffRequired": true,
+        "mustNotGeneralizeSingleMachineMeasurement": true
+      }
+    }
+  ]
+}

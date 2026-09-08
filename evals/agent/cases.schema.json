@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Camelid agent-loop eval case (SCAFFOLD — not executed by any script)",
+  "type": "object",
+  "required": ["id", "domain", "description", "modelRowId", "task", "expect"],
+  "properties": {
+    "id": { "type": "integer" },
+    "domain": { "const": "agent" },
+    "description": {
+      "type": "string",
+      "description": "Must name the exact real capability or bug this case targets, e.g. referencing commit a6b660cf."
+    },
+    "modelRowId": {
+      "type": "string",
+      "description": "Must resolve to a real row id in fixtures/ledger-excerpt.json (or a future fuller ledger fixture) with tool_capable: true. Never a made-up model name."
+    },
+    "workspaceRoot": {
+      "type": "string",
+      "description": "Real, reachable path the live agent's workspace session is rooted at. Never fabricated."
+    },
+    "task": {
+      "type": "string",
+      "description": "The natural-language instruction sent to the agent, e.g. 'list the files here and read one of them.'"
+    },
+    "expect": {
+      "type": "object",
+      "required": ["toolCallsExpected"],
+      "properties": {
+        "toolCallsExpected": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["read_file", "list_dir", "search"] },
+          "description": "Only read-only tools — write/shell/network/subagent tools are not supported per the real web_workspace contract and must never appear here."
+        },
+        "contentShouldBeEmptyWhenToolCallsPresent": {
+          "type": "boolean",
+          "description": "Per commit a6b660cf: when tools fire, content is expected to be emptied and tool_calls populated. A grader must check this exact shape, not just 'did something happen'."
+        },
+        "mustNotClaim": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["write", "shell", "network", "subagent", "unattended", "portability", "throughput"]
+          },
+          "description": "Capabilities the real web_workspace contract explicitly disclaims. A case must never expect these to succeed."
+        }
+      }
+    }
+  }
+}

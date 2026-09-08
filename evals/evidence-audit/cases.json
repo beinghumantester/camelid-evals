@@ -1,0 +1,53 @@
+{
+  "_provenance": "Every rowId here resolves to a real row in fixtures/ledger-excerpt.json. The skill is never told the 'correct' classification — it must derive it from the real contract fields it's handed, using Camelid's own vocabulary.",
+  "cases": [
+    {
+      "id": 1,
+      "domain": "evidence-audit",
+      "description": "Overclaiming trap: a validation-stage row described as 'fully supported'.",
+      "prompt": "A user claims: \"Qwen3 14B is fully supported by Camelid.\" Evaluate this claim against the real ledger row provided.",
+      "rowIds": ["qwen3_14b_q4_k_m"],
+      "expectations": [
+        "Correctly identifies the row's real status as active_validation_exact_row_smoke, not any 'supported_*' status",
+        "States the claim overstates what the evidence shows",
+        "Uses only Camelid's own real status vocabulary — never invents a parallel label like 'SUPPORTED' or 'EXPERIMENTAL' as if it were Camelid's own term"
+      ]
+    },
+    {
+      "id": 2,
+      "domain": "evidence-audit",
+      "description": "'It loads and runs' vs. 'it's validated' trap.",
+      "prompt": "Is Gemma 4 12B QAT Q4_0 ready for production use on an untested platform, given it loads and runs on one validated Metal node?",
+      "rowIds": ["gemma4_12b_it_qat_q4_0"],
+      "expectations": [
+        "States the row's real status (active_validation_single_node_metal) rather than treating 'it loads and runs' as sufficient for a broader readiness claim",
+        "Notes validation is scoped to one node/platform, not a general production-readiness claim",
+        "Does not claim broader platform support without evidence for it"
+      ]
+    },
+    {
+      "id": 3,
+      "domain": "evidence-audit",
+      "description": "Ambiguous claim spanning two real rows with different statuses.",
+      "prompt": "A user says: \"Camelid supports Mistral 7B Instruct.\" Is this specific enough, given the two real rows provided?",
+      "rowIds": ["mistral_7b_instruct_v0_3_q8_0", "mistral_7b_instruct_v0_2_q8_0"],
+      "expectations": [
+        "Points out 'Mistral 7B Instruct' is ambiguous between v0.3 (supported_exact_row_smoke) and v0.2 (active_validation_api_webui_pass_pending_context), which have different real statuses",
+        "Does not assume the v0.2 row inherits the v0.3 row's support level",
+        "Recommends specifying the exact version and quantization row"
+      ]
+    },
+    {
+      "id": 4,
+      "domain": "evidence-audit",
+      "description": "Support-scope trap: a supported row for one purpose, claimed for a different purpose.",
+      "prompt": "Can the Nomic embedding model be used for general-purpose text-generation chat, given it's a supported row in Camelid?",
+      "rowIds": ["nomic_embed_text_v1_5_q8_0"],
+      "expectations": [
+        "Correctly identifies support_scope is limited to embeddings/rerank/workspace semantic retrieval, not chat generation",
+        "Does not treat the 'supported_exact_row_embedding' status as implying general chat capability",
+        "Cites the row's generation_runs field (not_applicable — it's an encoder) as evidence it isn't a generation model"
+      ]
+    }
+  ]
+}

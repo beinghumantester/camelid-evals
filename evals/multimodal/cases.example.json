@@ -1,0 +1,36 @@
+{
+  "_NOT_EXECUTABLE": "Worked examples of the schema in cases.schema.json only. Not loaded by scripts/run-harness.ts and has no grader. See SCAFFOLD.md.",
+  "cases": [
+    {
+      "id": 1,
+      "domain": "multimodal",
+      "description": "Positive case: a single image encoded as a data URL on Metal should be correctly described.",
+      "mode": "prism_single_image_data_url_metal_or_windows_cuda",
+      "executionPath": "metal",
+      "expect": {
+        "shouldSucceed": true,
+        "verifiableImageFact": "REPLACE_WITH_A_REAL_VERIFIABLE_FACT_ABOUT_A_REAL_TEST_IMAGE"
+      }
+    },
+    {
+      "id": 2,
+      "domain": "multimodal",
+      "description": "Negative case: sending two images is an explicitly unsupported mode; a correct rejection or degradation is a PASS, not a gap.",
+      "mode": "multiple_images",
+      "executionPath": "metal",
+      "expect": {
+        "shouldSucceed": false
+      }
+    },
+    {
+      "id": 3,
+      "domain": "multimodal",
+      "description": "Negative case: combining image input with a tool/function call is unsupported even though each works alone.",
+      "mode": "vision_tool_combination",
+      "executionPath": "windows_cuda",
+      "expect": {
+        "shouldSucceed": false
+      }
+    }
+  ]
+}

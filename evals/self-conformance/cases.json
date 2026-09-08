@@ -1,0 +1,128 @@
+{
+  "_provenance": "Every request/expectation pair here drives a real entry in fixtures/api-conformance-registry.json, transcribed from Camelid's own src/api/contract.rs and src/api/mod.rs. Each case now carries an explicit `evidence` block per BASELINE_EVAL_PLAN.md's behavioral-oracle-vs-evidence-reference split: registryId names the contract.rs entry (which may be a HEAD-only addition), while evidence.evidenceReference cites where the underlying BEHAVIOR was independently confirmed present at v0.6.1 — the two are allowed to diverge, and SC-1..5 here are exactly the case where they do.",
+  "cases": [
+    {
+      "id": 1,
+      "registryId": "sampling_temperature",
+      "description": "temperature < 0 is a typed 400. The named contract.rs entry 'sampling_temperature' is a HEAD-only addition (not present at v0.6.1 — confirmed 20 vs 28 total contract.rs cases), but the runtime validation and 'invalid_sampling_parameter' error code were already present at v0.6.1.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "src/api/mod.rs typed-error dispatch (invalid_sampling_parameter hits at ~10266/15656) + tests/api_vertical_slice.rs:2021, confirmed present at the v0.6.1 tag", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "temperature": -1, "max_tokens": 8 } },
+      "expect": { "kind": "typed_error", "status": 400, "errorType": "invalid_request", "errorCode": "invalid_sampling_parameter" }
+    },
+    {
+      "id": 2,
+      "registryId": "sampling_temperature",
+      "description": "temperature: 0 (greedy) is valid.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "same validation path as case 1; temperature=0 is the documented greedy baseline throughout qa/evidence-bundles/", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "temperature": 0, "max_tokens": 8 } },
+      "expect": { "kind": "success", "status": 200 }
+    },
+    {
+      "id": 3,
+      "registryId": "sampling_top_p",
+      "description": "top_p must be in (0, 1]; 0 is excluded and is a typed 400.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "src/api/mod.rs invalid_sampling_parameter dispatch + tests/api_vertical_slice.rs (one of 4 assertions at that tag); exact per-parameter line mapping not isolated", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "top_p": 0, "max_tokens": 8 } },
+      "expect": { "kind": "typed_error", "status": 400, "errorType": "invalid_request", "errorCode": "invalid_sampling_parameter" }
+    },
+    {
+      "id": 4,
+      "registryId": "sampling_top_k",
+      "description": "top_k of exactly 0 is a typed 400 invalid_sampling_parameter.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "top_k: Option<u32> field confirmed present in src/api/mod.rs at v0.6.1; invalid_sampling_parameter dispatch confirmed present", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "top_k": 0, "max_tokens": 8 } },
+      "expect": { "kind": "typed_error", "status": 400, "errorType": "invalid_request", "errorCode": "invalid_sampling_parameter" }
+    },
+    {
+      "id": 5,
+      "registryId": "sampling_top_k",
+      "description": "REAL, DOCUMENTED QUIRK: a negative top_k cannot deserialize into the unsigned wire field, so it fails at the JSON layer with a DIFFERENT, untyped 400 — not the ErrorEnvelope shape. This is a serde/Rust type-system fact (top_k was already u32 at v0.6.1), not app-logic that could have changed across versions.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "top_k: Option<u32> field type confirmed present verbatim in src/api/mod.rs at the v0.6.1 tag; negative-number-into-u32 deserialization failure follows from serde/Rust, independent of app version", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "top_k": -1, "max_tokens": 8 } },
+      "expect": { "kind": "untyped_400" }
+    },
+    {
+      "id": 6,
+      "registryId": "sampling_min_p",
+      "description": "min_p must be in [0, 1]; 1.5 is out of range and is a typed 400.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "min_p: Option<f32> field confirmed present in src/api/mod.rs at v0.6.1; invalid_sampling_parameter dispatch confirmed present", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "min_p": 1.5, "max_tokens": 8 } },
+      "expect": { "kind": "typed_error", "status": 400, "errorType": "invalid_request", "errorCode": "invalid_sampling_parameter" }
+    },
+    {
+      "id": 7,
+      "registryId": "sampling_stop",
+      "description": "An empty stop array is a typed 400. UNVERIFIED per BASELINE_EVAL_PLAN.md open item #1: only the general invalid_sampling_parameter machinery was confirmed at v0.6.1, not this exact stop-array validation line.",
+      "evidence": { "confirmedAtVersion": "UNVERIFIED", "evidenceReference": "general invalid_sampling_parameter machinery confirmed at v0.6.1; the specific stop-array-bounds check line not yet isolated", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "stop": [], "max_tokens": 8 } },
+      "expect": { "kind": "typed_error", "status": 400, "errorType": "invalid_request" }
+    },
+    {
+      "id": 8,
+      "registryId": "sampling_stop",
+      "description": "More than 4 stop sequences is a typed 400. Same UNVERIFIED caveat as case 7.",
+      "evidence": { "confirmedAtVersion": "UNVERIFIED", "evidenceReference": "same as case 7", "registryEntryPresentAtVersion": false },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "stop": ["a", "b", "c", "d", "e"], "max_tokens": 8 } },
+      "expect": { "kind": "typed_error", "status": 400, "errorType": "invalid_request" }
+    },
+    {
+      "id": 9,
+      "registryId": "fail_closed_native_compatibility_routes",
+      "description": "POST /infill is unsupported: 501 typed not_implemented.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "fail_closed_native_compatibility_routes contract case confirmed present and materially unchanged at v0.6.1", "registryEntryPresentAtVersion": true },
+      "request": { "method": "POST", "path": "/infill", "body": {} },
+      "expect": { "kind": "typed_error", "status": 501, "errorType": "not_implemented" }
+    },
+    {
+      "id": 10,
+      "registryId": "fail_closed_native_compatibility_routes",
+      "description": "POST /v1/messages (Anthropic-shaped native route) is unsupported the same way.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "same contract case as id 9", "registryEntryPresentAtVersion": true },
+      "request": { "method": "POST", "path": "/v1/messages", "body": {} },
+      "expect": { "kind": "typed_error", "status": 501, "errorType": "not_implemented" }
+    },
+    {
+      "id": 11,
+      "registryId": "fail_closed_native_compatibility_routes",
+      "description": "POST /models/unload is unsupported.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "same contract case as id 9", "registryEntryPresentAtVersion": true },
+      "request": { "method": "POST", "path": "/models/unload", "body": {} },
+      "expect": { "kind": "typed_error", "status": 501, "errorType": "not_implemented" }
+    },
+    {
+      "id": 12,
+      "registryId": "fail_closed_native_compatibility_routes",
+      "description": "POST /slots (write) is unsupported.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "same contract case as id 9", "registryEntryPresentAtVersion": true },
+      "request": { "method": "POST", "path": "/slots", "body": {} },
+      "expect": { "kind": "typed_error", "status": 501, "errorType": "not_implemented" }
+    },
+    {
+      "id": 13,
+      "registryId": "openai_embeddings",
+      "description": "base64 encoding_format is unsupported. Requires the Nomic embedding profile loaded, not the active TinyLlama profile.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "openai_embeddings contract case confirmed present at v0.6.1 (grep of contract.rs at that tag)", "registryEntryPresentAtVersion": true },
+      "requiredCapability": "embeddings",
+      "request": { "method": "POST", "path": "/v1/embeddings", "body": { "model": "nomic-embed-text-v1.5", "input": "hello", "encoding_format": "base64" } },
+      "expect": { "kind": "typed_error", "status": 400, "errorType": "invalid_request" }
+    },
+    {
+      "id": 14,
+      "registryId": "openai_embeddings",
+      "description": "A plain string input with default (float) encoding is supported and, on the real file on this laptop, returns a 768-dim vector — confirmed by parsing the actual nomic-embed-text-v1.5.Q8_0.gguf header (embedding_length=768, architecture=nomic-bert). Requires the Nomic embedding profile loaded.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "openai_embeddings contract case confirmed present at v0.6.1; embedding_length=768 confirmed by parsing the real GGUF header bytes on the user's laptop, not the ledger prose", "registryEntryPresentAtVersion": true },
+      "requiredCapability": "embeddings",
+      "request": { "method": "POST", "path": "/v1/embeddings", "body": { "model": "nomic-embed-text-v1.5", "input": "hello" } },
+      "expect": { "kind": "success", "status": 200 },
+      "expectedEmbeddingDimensions": 768
+    },
+    {
+      "id": 15,
+      "registryId": "stream_options.include_usage",
+      "description": "NARROWER THAN THE FULL CONTRACT: this case only confirms stream_options.include_usage does not cause an error on the non-streaming path (gradeSelfConformanceCase always sends stream:false). The real contract's terminal-usage-chunk behavior only applies when streaming, and isn't covered by this grader — that needs the streaming-aware path regression-museum already has. Left as a smaller, honest case rather than an overclaimed one.",
+      "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "stream_options.include_usage contract case confirmed present at v0.6.1 (src/api/contract.rs:197-202 at that tag)", "registryEntryPresentAtVersion": true },
+      "request": { "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-model", "messages": [{ "role": "user", "content": "hi" }], "max_tokens": 8, "stream_options": { "include_usage": true } } },
+      "expect": { "kind": "success", "status": 200 }
+    }
+  ]
+}

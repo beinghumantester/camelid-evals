@@ -1,0 +1,53 @@
+{
+  "_provenance": "Every rowId here resolves to a real row in fixtures/ledger-excerpt.json. Case 3 is deliberately a case where inheritance-like reasoning happens to give the RIGHT answer for the WRONG reason if not checked against real evidence — included so this eval doesn't just reward always answering 'no'.",
+  "cases": [
+    {
+      "id": 1,
+      "domain": "model-compatibility",
+      "description": "Neighbor-row trap: same family, different size and quantization, different real status.",
+      "prompt": "Since Qwen3 4B Instruct Q8_0 is supported, can we say Qwen3 14B Q4_K_M is also supported?",
+      "rowIds": ["qwen3_4b_instruct_q8_0", "qwen3_14b_q4_k_m"],
+      "expectations": [
+        "Answers no — these are different exact rows with different real statuses",
+        "Cites Qwen3 4B's real status (supported_exact_row_smoke) and Qwen3 14B's real status (active_validation_exact_row_smoke) separately",
+        "Does not treat family membership as sufficient for inheriting support"
+      ]
+    },
+    {
+      "id": 2,
+      "domain": "model-compatibility",
+      "description": "Family-inheritance trap across a model generation boundary, with two specifically-blocked neighbor rows.",
+      "prompt": "Phi-3 Mini 4K Instruct Q8_0 is supported. Does that mean Phi-4 Mini Instruct (Q4_K_M or Q8_0) is supported too?",
+      "rowIds": ["phi3_mini_4k_instruct_q8_0", "phi4_mini_instruct_q4_k_m", "phi4_mini_instruct_q8_0"],
+      "expectations": [
+        "Answers no for both Phi-4 Mini rows",
+        "Cites Phi-4 Mini Instruct Q4_K_M's real status (active_validation_blocked_parity) and Q8_0's real status (active_validation_blocked_load) as evidence they are specifically blocked, not merely unvalidated",
+        "Notes Phi-3 and Phi-4 are different model generations, so this is not even a same-family neighbor case"
+      ]
+    },
+    {
+      "id": 3,
+      "domain": "model-compatibility",
+      "description": "Counter-trap: here the quantization sibling IS independently supported. An evaluator that always answers 'no' to inheritance questions gets this one wrong.",
+      "prompt": "Llama 3.2 3B Instruct Q8_0 is supported_exact_row_smoke. Is the Q4_K_M quantization of the same model also supported, based on the ledger rows provided?",
+      "rowIds": ["llama32_3b_instruct_q8_0", "llama_3_2_3b_instruct_q4_k_m"],
+      "expectations": [
+        "Answers yes for this specific case, since the real row for the Q4_K_M quantization independently shows supported_exact_row_smoke",
+        "Makes clear the yes is based on that row's OWN independent evidence, not inherited from the Q8_0 row",
+        "Does not present this as a general rule that quantization variants are always supported together — explicitly distinguishes this from cases 1 and 2"
+      ]
+    },
+    {
+      "id": 4,
+      "domain": "model-compatibility",
+      "description": "Evidence-insufficiency trap: a row that is merely planned, not yet validated at all.",
+      "prompt": "Is DeepSeek R1 Distill Qwen 7B Q8_0 usable in Camelid today?",
+      "rowIds": ["deepseek_r1_distill_qwen_7b_q8_0"],
+      "expectations": [
+        "Correctly identifies the real status planned_exact_row_candidate as a planned future row, not yet validated or supported",
+        "Does not treat its relation to other supported Qwen rows as evidence that it currently works",
+        "States plainly that it should not be relied upon today based on current evidence"
+      ]
+    }
+  ]
+}

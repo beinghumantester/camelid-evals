@@ -1,0 +1,33 @@
+{
+  "_NOT_EXECUTABLE": "Worked example of the schema in cases.schema.json only. Not loaded by scripts/run-harness.ts and has no grader. See SCAFFOLD.md.",
+  "cases": [
+    {
+      "id": 1,
+      "domain": "security",
+      "description": "Owner mismatch on an otherwise valid GithubRepositoryMetadata-shaped request must withhold the token, per github_auth_scope_for_request's exact-scope comparison in src/api/web_research.rs.",
+      "boundary": "github_provider_auth_scope",
+      "request": {
+        "url": "https://api.github.com/repos/some-other-owner/some-other-repo",
+        "acceptHeader": "application/vnd.github+json",
+        "variedDimension": "owner"
+      },
+      "expect": {
+        "tokenShouldBeAttached": false
+      }
+    },
+    {
+      "id": 2,
+      "domain": "security",
+      "description": "A workspace session request with allow_writes=true must be rejected outright, per the real web_workspace contract's explicit denial.",
+      "boundary": "workspace_write_denial",
+      "request": {
+        "url": "REPLACE_WITH_REAL_REACHABLE_WORKSPACE_SESSIONS_ENDPOINT",
+        "variedDimension": "allow_writes_flag"
+      },
+      "expect": {
+        "tokenShouldBeAttached": false,
+        "shouldBeRejected": true
+      }
+    }
+  ]
+}

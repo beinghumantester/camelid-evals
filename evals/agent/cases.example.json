@@ -1,0 +1,18 @@
+{
+  "_NOT_EXECUTABLE": "This file is a worked example of the schema in cases.schema.json. It is not loaded by scripts/run-harness.ts and has no grader. See SCAFFOLD.md for what must be true before this can run for real.",
+  "cases": [
+    {
+      "id": 1,
+      "domain": "agent",
+      "description": "Regression-museum-style reproduction of commit a6b660cf: a tool-capable model given a read-only task must actually execute read_file/list_dir via the structured tool_calls field, not silently return an empty answer.",
+      "modelRowId": "llama32_3b_instruct_q8_0",
+      "workspaceRoot": "REPLACE_WITH_REAL_REACHABLE_PATH",
+      "task": "List the files in this workspace, then read the first one and summarize it in one sentence.",
+      "expect": {
+        "toolCallsExpected": ["list_dir", "read_file"],
+        "contentShouldBeEmptyWhenToolCallsPresent": true,
+        "mustNotClaim": ["write", "shell", "network", "subagent", "unattended", "portability", "throughput"]
+      }
+    }
+  ]
+}

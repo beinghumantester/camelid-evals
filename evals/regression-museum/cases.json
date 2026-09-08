@@ -1,0 +1,41 @@
+{
+  "_provenance": "Both cases reproduce a REAL, verified historical Camelid bug exactly: commit 2a893b37 ('fix(api): stop the dense streaming lane duplicating a reply on a straddling stop'), with the exact repro fixture from the commit message itself (stop '><', max_tokens 2, tokens whose text is '<unk>'). Confirmed via `git merge-base --is-ancestor v0.6.1 2a893b37` (the fix postdates v0.6.1) and `git merge-base --is-ancestor v0.7.0 2a893b37` (the fix ALSO postdates the newer v0.7.0 tag — as of this writing the fix exists only on main/HEAD, not in any tagged release). That means on this laptop's pinned v0.6.1, and on v0.7.0 too, the bug is expected and un-fixed. `fixedAtOrAfterVersion` is deliberately set to the sentinel 'unreleased-post-v0.7.0' rather than a fabricated version number — scripts/lib/probe.ts's compareVersions() treats any non-numeric sentinel as 'never satisfied by a real tag', so KB-2 correctly reports NOT_APPLICABLE against every real running version until this file is updated by hand once the fix actually ships in a tagged release (update fixedAtOrAfterVersion to that real tag at that point, per BASELINE_EVAL_PLAN.md's KB-1/KB-2 design).",
+  "cases": [
+    {
+      "id": 1,
+      "bugId": "stop-sequence-streaming-duplication",
+      "sourceCommit": "2a893b37 (timtoole02/Camelid)",
+      "fixedAtOrAfterVersion": "unreleased-post-v0.7.0",
+      "role": "characterization",
+      "description": "KB-1 (characterization): on v0.6.1 (and every other real tagged release as of this writing, since the fix is main/HEAD-only), a stop string straddling a token boundary is EXPECTED to make the dense streaming lane re-emit the whole reply as an extra delta on top of everything already streamed, so the client sees the prefix twice. Root cause: `truncate_at_stop_sequence` cuts at the match START, which can be shorter than what was already sent, so `strip_prefix` fails and the `unwrap_or_else` fallback resends the entire reply. Exact repro from the commit: stop sequence '><', max_tokens 2, where the generated tokens decode to '<unk>' each. The bug is streaming-ONLY: the non-streaming lane already correctly returns the truncated '<unk' both before and after the fix; only the streamed reconstruction duplicates to '<unk><unk' pre-fix. This case reports KNOWN_DEFECT (not FAIL) when that exact duplicated text reproduces on an unfixed version — a clean match here is confirmation the bug is exactly as documented, not a new problem.",
+      "request": {
+        "model": "mock-model",
+        "messages": [{ "role": "user", "content": "trigger the stop-straddle repro" }],
+        "stop": ["><"],
+        "max_tokens": 2,
+        "temperature": 0
+      },
+      "expectedNonStreamText": "<unk",
+      "expectedStreamedTextBeforeFix": "<unk><unk",
+      "expectedStreamedTextAfterFix": "<unk"
+    },
+    {
+      "id": 2,
+      "bugId": "stop-sequence-streaming-duplication",
+      "sourceCommit": "2a893b37 (timtoole02/Camelid)",
+      "fixedAtOrAfterVersion": "unreleased-post-v0.7.0",
+      "role": "regression_guard",
+      "description": "KB-2 (regression guard): once a real tagged release includes commit 2a893b37's fix, the streamed reconstruction of this exact repro must equal the non-streaming answer ('<unk') with no duplication ('<unk><unk' reappearing would mean the fix regressed). Until then — for every version on this laptop today, and for every currently-tagged release including v0.7.0 — this case is NOT_APPLICABLE by design: there is nothing to guard against regressing yet, since the fix has never shipped. Do not delete this case or mark it FAIL when it reports NOT_APPLICABLE; that is the correct, honest outcome for an unreleased fix. Update fixedAtOrAfterVersion to the real tag once the fix ships, at which point this case starts actually running and must PASS.",
+      "request": {
+        "model": "mock-model",
+        "messages": [{ "role": "user", "content": "trigger the stop-straddle repro" }],
+        "stop": ["><"],
+        "max_tokens": 2,
+        "temperature": 0
+      },
+      "expectedNonStreamText": "<unk",
+      "expectedStreamedTextBeforeFix": "<unk><unk",
+      "expectedStreamedTextAfterFix": "<unk"
+    }
+  ]
+}

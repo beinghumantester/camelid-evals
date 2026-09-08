@@ -1,0 +1,18 @@
+{
+  "_NOT_EXECUTABLE": "Worked example of the schema in cases.schema.json only. Not loaded by scripts/run-harness.ts and has no grader. See SCAFFOLD.md.",
+  "cases": [
+    {
+      "id": 1,
+      "domain": "rag",
+      "description": "With the exact supported Nomic embedding row loaded, a workspace session asked a semantically-phrased question (not keyword-matching the file) should surface a semantic-path excerpt, marked untrusted, rather than falling back to lexical search.",
+      "embeddingRowId": "nomic_embed_text_v1_5_q8_0",
+      "workspaceRoot": "REPLACE_WITH_REAL_REACHABLE_PATH",
+      "task": "What does this codebase do to keep numbers accurate when adding them up? (phrased to require semantic match against a file that never uses the word 'accurate')",
+      "expect": {
+        "pathExpected": "semantic_injection",
+        "excerptsMustBeMarkedUntrusted": true,
+        "mustNotClaim": ["persistent_vector_database", "broad_retrieval_quality", "unbounded_index"]
+      }
+    }
+  ]
+}

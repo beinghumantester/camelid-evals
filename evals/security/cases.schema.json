@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Camelid security-boundary eval case (SCAFFOLD — not executed by any script)",
+  "type": "object",
+  "required": ["id", "domain", "description", "boundary", "request", "expect"],
+  "properties": {
+    "id": { "type": "integer" },
+    "domain": { "const": "security" },
+    "description": { "type": "string" },
+    "boundary": {
+      "type": "string",
+      "enum": ["github_provider_auth_scope", "workspace_write_denial", "workspace_loopback_only", "workspace_cli_token"],
+      "description": "Which real, source-verified boundary this case targets. Never a generic 'security' label."
+    },
+    "request": {
+      "type": "object",
+      "description": "The exact request shape sent, varying only the dimension under test (owner, repo, path segments, Accept header, or listener address) from a known-valid baseline.",
+      "properties": {
+        "url": { "type": "string" },
+        "acceptHeader": { "type": "string" },
+        "variedDimension": {
+          "type": "string",
+          "enum": ["owner", "repo", "path_shape", "accept_header", "listener_address", "allow_writes_flag"]
+        }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "required": ["tokenShouldBeAttached"],
+      "properties": {
+        "tokenShouldBeAttached": {
+          "type": "boolean",
+          "description": "Whether github_auth_scope_for_request's real logic should release the token for this exact request shape."
+        },
+        "shouldBeRejected": { "type": "boolean" }
+      }
+    }
+  }
+}

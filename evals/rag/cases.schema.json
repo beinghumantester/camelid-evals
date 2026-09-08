@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Camelid RAG-surface eval case (SCAFFOLD — not executed by any script)",
+  "type": "object",
+  "required": ["id", "domain", "description", "embeddingRowId", "expect"],
+  "properties": {
+    "id": { "type": "integer" },
+    "domain": { "const": "rag" },
+    "description": { "type": "string" },
+    "embeddingRowId": {
+      "type": "string",
+      "const": "nomic_embed_text_v1_5_q8_0",
+      "description": "Injection only happens when this exact row is loaded, per the real web_workspace contract. Any other value means the case is testing the lexical-fallback path, not injection."
+    },
+    "workspaceRoot": { "type": "string", "description": "Real, reachable path. Never fabricated." },
+    "task": { "type": "string" },
+    "expect": {
+      "type": "object",
+      "required": ["pathExpected"],
+      "properties": {
+        "pathExpected": {
+          "type": "string",
+          "enum": ["semantic_injection", "lexical_fallback"]
+        },
+        "excerptsMustBeMarkedUntrusted": { "type": "boolean", "default": true },
+        "mustNotClaim": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["persistent_vector_database", "broad_retrieval_quality", "unbounded_index"] }
+        }
+      }
+    }
+  }
+}

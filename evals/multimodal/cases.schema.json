@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Camelid multimodal eval case (SCAFFOLD — not executed by any script)",
+  "type": "object",
+  "required": ["id", "domain", "description", "mode", "expect"],
+  "properties": {
+    "id": { "type": "integer" },
+    "domain": { "const": "multimodal" },
+    "description": { "type": "string" },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "prism_single_image_data_url_metal_or_windows_cuda",
+        "multiple_images",
+        "remote_image_urls",
+        "audio_or_video_input",
+        "vision_tool_combination"
+      ],
+      "description": "Must be exactly one of the real supported/unsupported mode strings from the openai_chat_completions conformance case. Never a paraphrase."
+    },
+    "executionPath": {
+      "type": "string",
+      "enum": ["metal", "windows_cuda", "other"],
+      "description": "The supported mode only applies on metal or windows_cuda; 'other' means expect an out-of-gate result regardless of the mode field."
+    },
+    "expect": {
+      "type": "object",
+      "required": ["shouldSucceed"],
+      "properties": {
+        "shouldSucceed": { "type": "boolean" },
+        "verifiableImageFact": {
+          "type": "string",
+          "description": "For supported-mode positive cases only: a fact about the real test image (e.g. a visible number or word) the model's answer can be checked against."
+        }
+      }
+    }
+  }
+}

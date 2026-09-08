@@ -1,0 +1,132 @@
+{
+  "provenance": {
+    "source_repo": "https://github.com/timtoole02/Camelid",
+    "source_file": "src/api/contract.rs",
+    "note": "Transcribed verbatim from the real API_CONFORMANCE_CASES registry (26 cases) that Camelid's own /api/capabilities endpoint serves via api_conformance_contract(). This IS Camelid's self-declared contract, not an external guess at one. Error envelope and status-code mapping transcribed from the real ErrorEnvelope/ErrorBody structs and the status->error_type match in src/api/mod.rs.",
+    "extracted_at": "2026-09-07"
+  },
+  "error_envelope_shape": {
+    "note": "Real Rust structs from src/api/mod.rs, verbatim.",
+    "ErrorEnvelope": { "error": "ErrorBody", "prompt_token_count": "Option<usize> (omitted when None)" },
+    "ErrorBody": { "message": "string", "type": "error_type (renamed field)", "code": "string", "param": "string | null" },
+    "status_to_error_type": {
+      "500": "server_error",
+      "501": "not_implemented",
+      "503": "runtime_unavailable",
+      "422": "model_unavailable",
+      "*": "invalid_request (default for anything else, e.g. 400)"
+    }
+  },
+  "cases": [
+    {
+      "id": "openai_chat_completions",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }],
+      "supported_modes": ["nonstreaming", "streaming", "function_tool_roundtrip", "prism_single_image_data_url_metal_or_windows_cuda"],
+      "unsupported_modes": ["multiple_images", "remote_image_urls", "audio_or_video_input", "vision_tool_combination"]
+    },
+    {
+      "id": "openai_responses",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/responses" }, { "method": "POST", "path": "/v1/conversations" }],
+      "supported_modes": ["stateless_nonstreaming", "stateless_streaming", "durable_nonstreaming", "durable_streaming", "previous_response_id", "conversations", "response_retrieval_and_deletion", "idempotency_key", "function_tools", "manual_function_call_continuation"],
+      "unsupported_modes": ["background", "hosted_tools", "multimodal_input", "remote_state", "cross_process_request_serialization"]
+    },
+    {
+      "id": "openai_embeddings",
+      "status": "supported_exact_model_row",
+      "routes": [{ "method": "POST", "path": "/v1/embeddings" }, { "method": "POST", "path": "/embedding" }, { "method": "POST", "path": "/embeddings" }],
+      "supported_modes": ["string", "bounded_string_batch", "float_encoding"],
+      "unsupported_modes": ["base64_encoding", "token_id_input", "arbitrary_encoder"],
+      "notes": "Current gate is the exact Nomic Embed Text v1.5 Q8_0 catalog row."
+    },
+    {
+      "id": "embedding_similarity_reranking",
+      "status": "supported_exact_model_row",
+      "routes": [{ "method": "POST", "path": "/rerank" }, { "method": "POST", "path": "/reranking" }, { "method": "POST", "path": "/v1/rerank" }, { "method": "POST", "path": "/v1/reranking" }],
+      "supported_modes": ["string_documents", "object_documents", "top_n"],
+      "unsupported_modes": ["cross_encoder"],
+      "notes": "Bi-encoder embedding-similarity reranking using Nomic search_query/search_document prefixes, not a classifier-head cross-encoder."
+    },
+    {
+      "id": "fail_closed_native_compatibility_routes",
+      "status": "unsupported",
+      "routes": [{ "method": "POST", "path": "/infill" }, { "method": "POST", "path": "/v1/messages" }, { "method": "POST", "path": "/models/unload" }, { "method": "POST", "path": "/slots" }],
+      "supported_modes": [],
+      "unsupported_modes": ["all"],
+      "notes": "Return typed not_implemented errors until real route semantics and backend support exist."
+    },
+    {
+      "id": "sampling_temperature",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }, { "method": "POST", "path": "/v1/completions" }],
+      "supported_modes": ["chat_streaming", "chat_nonstreaming", "dense_lane_completions"],
+      "unsupported_modes": ["gemma4_lane", "diffusion_gemma_lane"],
+      "notes": "A value below 0, or non-finite, is a typed 400. No upper bound."
+    },
+    {
+      "id": "sampling_top_p",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }, { "method": "POST", "path": "/v1/completions" }],
+      "supported_modes": ["chat_streaming", "chat_nonstreaming", "dense_lane_completions"],
+      "unsupported_modes": ["gemma4_lane", "diffusion_gemma_lane"],
+      "notes": "Must be finite and in (0, 1]; anything else is a typed 400."
+    },
+    {
+      "id": "sampling_top_k",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }, { "method": "POST", "path": "/v1/completions" }],
+      "supported_modes": ["chat_streaming", "chat_nonstreaming", "dense_lane_completions"],
+      "unsupported_modes": ["gemma4_lane", "diffusion_gemma_lane"],
+      "notes": "top_k of 0 is a typed 400 invalid_sampling_parameter. A NEGATIVE value cannot deserialize into an unsigned field and is a typed 400 malformed JSON INSTEAD (a different failure path, not the ErrorEnvelope shape)."
+    },
+    {
+      "id": "sampling_min_p",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }, { "method": "POST", "path": "/v1/completions" }],
+      "supported_modes": ["chat_streaming", "chat_nonstreaming", "dense_lane_completions"],
+      "unsupported_modes": ["gemma4_lane", "diffusion_gemma_lane"],
+      "notes": "Must be finite and in [0, 1]; anything else is a typed 400."
+    },
+    {
+      "id": "sampling_seed",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }, { "method": "POST", "path": "/v1/completions" }],
+      "supported_modes": ["chat_streaming", "chat_nonstreaming", "dense_lane_completions"],
+      "unsupported_modes": ["gemma4_lane", "diffusion_gemma_lane"],
+      "notes": "IMPORTANT (real, documented meta-eval trap): two different seeds are NOT guaranteed to differ — a peaked step, or top_k=1, selects the same token for every seed. A seed has no observable effect at temperature 0."
+    },
+    {
+      "id": "sampling_stop",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }, { "method": "POST", "path": "/v1/completions" }],
+      "supported_modes": ["chat_streaming", "chat_nonstreaming", "dense_lane_completions"],
+      "unsupported_modes": ["gemma4_lane", "diffusion_gemma_lane"],
+      "notes": "Up to 4 stop strings. An empty array, an empty string, or more than 4 sequences is a typed 400. A stop string may span or split tokens; the token that completes it is retained in usage.completion_tokens while only the text is cut."
+    },
+    {
+      "id": "multi_choice_generation",
+      "status": "supported_current_gate_nonstreaming",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }, { "method": "POST", "path": "/v1/completions" }],
+      "supported_modes": ["nonstreaming_1_to_8"],
+      "unsupported_modes": ["streaming", "receipts", "logprobs"],
+      "notes": "1..=8 independent, reproducibly seeded choices in non-streaming mode only."
+    },
+    {
+      "id": "stream_options.include_usage",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/v1/chat/completions" }],
+      "supported_modes": ["include_usage"],
+      "unsupported_modes": ["other_stream_options"],
+      "notes": "stream_options.include_usage:true appends one terminal chunk with choices:[] and a usage object identical to the non-streaming endpoint's counts, then [DONE]. Malformed/other stream_options shapes are tolerated and ignored (no error)."
+    },
+    {
+      "id": "web_workspace",
+      "status": "supported_current_gate",
+      "routes": [{ "method": "POST", "path": "/api/agent/workspace/sessions" }],
+      "supported_modes": ["read_only_tools", "durable_threads"],
+      "unsupported_modes": ["writes", "shell", "network", "subagents"],
+      "notes": "Loopback WebUI only: durable conversations over exactly read_file/list_dir/literal-content search inside one canonical workspace root; allow_writes=true is rejected. No shell, network, GUI, subagent, or unattended claim."
+    }
+  ]
+}
