@@ -63,26 +63,47 @@ jobs:
           CAMELID_BASE_URL: http://127.0.0.1:8181
 
       - name: Prove tier isolation (KB-1 must FAIL if the mock stops reproducing the bug while the harness still believes it's on an unfixed version)
+        # Runs a SECOND mock server on a different port (8182) rather than killing and
+        # restarting on 8181. `nohup npx tsx ... &` backgrounds the outer `tsx` wrapper
+        # process, but tsx spawns a separate child Node process that's the one actually
+        # holding the listening socket — `kill "$(cat mock-server.pid)"` only kills the
+        # wrapper (confirmed via `ps -o pid,ppid`: the child's PPID is the wrapper, and it is
+        # NOT killed when the wrapper is), so the orphaned child keeps serving BUG_MODE=stop_straddle
+        # forever. The old attempt to kill-and-restart on the same port then either raced an
+        # EADDRINUSE (the new process dies immediately, silently, in the background) or, once
+        # that was fixed, just kept talking to the immortal orphan — reproducing the exact
+        # "expected FAIL but the run passed" CI failure. Two independent ports sidestep the
+        # whole class of problem instead of trying to out-wait it.
         run: |
-          kill "$(cat mock-server.pid)" || true
-          BUG_MODE=fixed nohup npx tsx mock-server/server.ts > mock-server-bug.log 2>&1 &
+          BUG_MODE=fixed MOCK_PORT=8182 nohup npx tsx mock-server/server.ts > mock-server-bug.log 2>&1 &
           echo $! > mock-server-bug.pid
           for i in $(seq 1 20); do
-            curl -sf http://127.0.0.1:8181/api/capabilities > /dev/null && break
+            curl -sf http://127.0.0.1:8182/api/capabilities > /dev/null && break
             sleep 0.5
           done
-          if npm run evals:automated; then
+          grep -q "BUG_MODE=fixed" mock-server-bug.log || {
+            echo "mock-server-bug.log never confirmed BUG_MODE=fixed — the second server never came up healthy"
+            cat mock-server-bug.log
+            exit 1
+          }
+
+          if CAMELID_BASE_URL=http://127.0.0.1:8182 npm run evals:automated; then
             echo "expected regression-museum#1 (KB-1, characterization) to FAIL when BUG_MODE=fixed but the running version still predates the real fix, but the run passed"
             exit 1
           else
             echo "confirmed: KB-1 correctly failed — the historically-known defect stopped reproducing on a version that should still have it"
           fi
-        env:
-          CAMELID_BASE_URL: http://127.0.0.1:8181
 
-      - name: Stop mock server
+      - name: Stop mock servers
         if: always()
-        run: kill "$(cat mock-server-bug.pid)" 2>/dev/null || kill "$(cat mock-server.pid)" 2>/dev/null || true
+        run: |
+          kill "$(cat mock-server.pid)" 2>/dev/null || true
+          kill "$(cat mock-server-bug.pid)" 2>/dev/null || true
+          # Best-effort: also reap tsx's orphaned child node process on each port (see the
+          # comment above) — harmless if it fails, the runner VM is destroyed right after anyway.
+          fuser -k 8181/tcp 2>/dev/null || true
+          fuser -k 8182/tcp 2>/dev/null || true
+          true
 
       - name: Upload run reports
         if: always()
