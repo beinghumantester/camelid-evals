@@ -71,7 +71,7 @@
       "description": "POST /infill is unsupported: 501 typed not_implemented.",
       "evidence": { "confirmedAtVersion": "v0.6.1", "evidenceReference": "fail_closed_native_compatibility_routes contract case confirmed present and materially unchanged at v0.6.1", "registryEntryPresentAtVersion": true },
       "request": { "method": "POST", "path": "/infill", "body": {} },
-      "expect": { "kind": "typed_error", "status": 501, "errorType": "not_implemented" }
+     "expect": { "kind": "typed_error", "status": 501, "errorType": "not_implemented", "errorCode": "unsupported_llama_server_infill" }
     },
     {
       "id": 10,
